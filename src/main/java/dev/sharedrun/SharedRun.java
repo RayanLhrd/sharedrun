@@ -53,6 +53,7 @@ public class SharedRun implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        dev.sharedrun.api.ApiConfig.load();
         SharedRunSounds.init(); // Register custom sound events
         PayloadTypeRegistry.playS2C().register(TimerSyncPayload.TYPE, TimerSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(ProgressSyncPayload.TYPE, ProgressSyncPayload.CODEC);
