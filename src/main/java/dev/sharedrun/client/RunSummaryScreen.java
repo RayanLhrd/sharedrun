@@ -39,6 +39,8 @@ public class RunSummaryScreen extends Screen {
     }
 
     private final RunSummary summary;
+    /** Non-null when opened from the leaderboard — replaces TP buttons with a Back button. */
+    private final Screen parent;
 
     // Layout constants
     private static final int HEADER_HEIGHT = 70;
@@ -49,53 +51,67 @@ public class RunSummaryScreen extends Screen {
     private static final int BUTTON_BOTTOM_MARGIN = 8;
 
     public RunSummaryScreen(RunSummary summary) {
+        this(summary, null);
+    }
+
+    public RunSummaryScreen(RunSummary summary, Screen parent) {
         super(Text.literal("Run Summary"));
         this.summary = summary;
+        this.parent  = parent;
     }
 
     @Override
     protected void init() {
         super.init();
 
-        // Rangée de 6 boutons en bas : 5 TP debrief + 1 leaderboard
         int buttonW = 80;
         int gap = 5;
-        int totalW = 6 * buttonW + 5 * gap;
-        int startX = this.width / 2 - totalW / 2;
         int y = this.height - BUTTON_H - BUTTON_BOTTOM_MARGIN;
 
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("§a🌳 Overworld"),
-                btn -> sendTp(1)
-        ).dimensions(startX, y, buttonW, BUTTON_H).build());
+        if (parent != null) {
+            // Opened from leaderboard — single back button
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§7← Retour au leaderboard"),
+                    btn -> this.client.setScreen(parent)
+            ).dimensions(this.width / 2 - 100, y, 200, BUTTON_H).build());
+        } else {
+            // Normal end-of-run debrief — 6 TP + leaderboard buttons
+            int totalW = 6 * buttonW + 5 * gap;
+            int startX = this.width / 2 - totalW / 2;
 
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("§c🔥 Nether"),
-                btn -> sendTp(2)
-        ).dimensions(startX + (buttonW + gap), y, buttonW, BUTTON_H).build());
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§a🌳 Overworld"),
+                    btn -> sendTp(1)
+            ).dimensions(startX, y, buttonW, BUTTON_H).build());
 
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("§4🏰 Forteresse"),
-                btn -> sendTp(5)
-        ).dimensions(startX + 2 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§c🔥 Nether"),
+                    btn -> sendTp(2)
+            ).dimensions(startX + (buttonW + gap), y, buttonW, BUTTON_H).build());
 
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("§6🏛 Stronghold"),
-                btn -> sendTp(3)
-        ).dimensions(startX + 3 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§4🏰 Forteresse"),
+                    btn -> sendTp(5)
+            ).dimensions(startX + 2 * (buttonW + gap), y, buttonW, BUTTON_H).build());
 
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("§5🐲 End"),
-                btn -> sendTp(4)
-        ).dimensions(startX + 4 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§6🏛 Stronghold"),
+                    btn -> sendTp(3)
+            ).dimensions(startX + 3 * (buttonW + gap), y, buttonW, BUTTON_H).build());
 
-        this.addDrawableChild(ButtonWidget.builder(
-                Text.literal("§e🏆 Leaderboard"),
-                btn -> {
-                    ClientPlayNetworking.send(new LeaderboardRequestPayload());
-                    this.close();
-                }
-        ).dimensions(startX + 5 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§5🐲 End"),
+                    btn -> sendTp(4)
+            ).dimensions(startX + 4 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+
+            this.addDrawableChild(ButtonWidget.builder(
+                    Text.literal("§e🏆 Leaderboard"),
+                    btn -> {
+                        ClientPlayNetworking.send(new LeaderboardRequestPayload());
+                        this.close();
+                    }
+            ).dimensions(startX + 5 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+        }
     }
 
     private void sendTp(int dest) {
