@@ -4,7 +4,10 @@ import dev.sharedrun.achievement.AchievementTracker;
 import dev.sharedrun.command.SharedRunCommands;
 import dev.sharedrun.endrun.EndRunHandler;
 import dev.sharedrun.lobby.LobbyManager;
+import dev.sharedrun.api.LeaderboardFetcher;
 import dev.sharedrun.network.DebriefTpPayload;
+import dev.sharedrun.network.LeaderboardPayload;
+import dev.sharedrun.network.LeaderboardRequestPayload;
 import dev.sharedrun.network.ProgressSyncPayload;
 import dev.sharedrun.network.RunSummaryPayload;
 import dev.sharedrun.network.TimerSyncPayload;
@@ -59,11 +62,18 @@ public class SharedRun implements ModInitializer {
         PayloadTypeRegistry.playS2C().register(ProgressSyncPayload.TYPE, ProgressSyncPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RunSummaryPayload.TYPE, RunSummaryPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(DebriefTpPayload.TYPE, DebriefTpPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(LeaderboardRequestPayload.TYPE, LeaderboardRequestPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(LeaderboardPayload.TYPE, LeaderboardPayload.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(DebriefTpPayload.TYPE, (payload, ctx) -> {
             ServerPlayerEntity player = ctx.player();
             int dest = payload.destination();
             ctx.server().execute(() -> EndRunHandler.handleDebriefTp(ctx.server(), player, dest));
+        });
+
+        ServerPlayNetworking.registerGlobalReceiver(LeaderboardRequestPayload.TYPE, (payload, ctx) -> {
+            ServerPlayerEntity player = ctx.player();
+            ctx.server().execute(() -> LeaderboardFetcher.fetchAndSend(player));
         });
 
         Placeholders.register(id("hearts_caused"), (ctx, arg) -> {

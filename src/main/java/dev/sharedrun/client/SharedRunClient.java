@@ -1,7 +1,10 @@
 package dev.sharedrun.client;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import dev.sharedrun.endrun.LeaderboardEntry;
 import dev.sharedrun.endrun.RunSummary;
+import dev.sharedrun.network.LeaderboardPayload;
 import dev.sharedrun.network.ProgressSyncPayload;
 import dev.sharedrun.network.RunSummaryPayload;
 import dev.sharedrun.network.TimerSyncPayload;
@@ -49,6 +52,18 @@ public class SharedRunClient implements ClientModInitializer {
                 }
             } catch (Exception e) {
                 System.err.println("[SharedRun] Failed to parse run summary: " + e.getMessage());
+            }
+        });
+
+        ClientPlayNetworking.registerGlobalReceiver(LeaderboardPayload.TYPE, (payload, ctx) -> {
+            try {
+                java.util.List<LeaderboardEntry> entries = new Gson().fromJson(
+                        payload.json(),
+                        new TypeToken<java.util.List<LeaderboardEntry>>() {}.getType()
+                );
+                ctx.client().execute(() -> ctx.client().setScreen(new LeaderboardScreen(entries)));
+            } catch (Exception e) {
+                System.err.println("[SharedRun] Failed to parse leaderboard: " + e.getMessage());
             }
         });
 

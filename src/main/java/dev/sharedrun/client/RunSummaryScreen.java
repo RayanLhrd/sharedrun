@@ -2,6 +2,7 @@ package dev.sharedrun.client;
 
 import dev.sharedrun.endrun.RunSummary;
 import dev.sharedrun.network.DebriefTpPayload;
+import dev.sharedrun.network.LeaderboardRequestPayload;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -56,10 +57,10 @@ public class RunSummaryScreen extends Screen {
     protected void init() {
         super.init();
 
-        // Rangée de 5 boutons TP debrief en bas (spectator)
+        // Rangée de 6 boutons en bas : 5 TP debrief + 1 leaderboard
         int buttonW = 80;
         int gap = 5;
-        int totalW = 5 * buttonW + 4 * gap;
+        int totalW = 6 * buttonW + 5 * gap;
         int startX = this.width / 2 - totalW / 2;
         int y = this.height - BUTTON_H - BUTTON_BOTTOM_MARGIN;
 
@@ -87,6 +88,14 @@ public class RunSummaryScreen extends Screen {
                 Text.literal("§5🐲 End"),
                 btn -> sendTp(4)
         ).dimensions(startX + 4 * (buttonW + gap), y, buttonW, BUTTON_H).build());
+
+        this.addDrawableChild(ButtonWidget.builder(
+                Text.literal("§e🏆 Leaderboard"),
+                btn -> {
+                    ClientPlayNetworking.send(new LeaderboardRequestPayload());
+                    this.close();
+                }
+        ).dimensions(startX + 5 * (buttonW + gap), y, buttonW, BUTTON_H).build());
     }
 
     private void sendTp(int dest) {

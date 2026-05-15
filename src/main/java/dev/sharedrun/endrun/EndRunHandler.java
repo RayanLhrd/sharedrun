@@ -234,7 +234,9 @@ public final class EndRunHandler {
                 .append(buildCustomLink("§5[🐲 End]", "tp_end", "TP au point d'arrivée End"));
 
         MutableText reopen = Text.literal("  ")
-                .append(buildCustomLink("§e§l[📋 Rouvrir le récap]", "debrief", "Réafficher l'écran de fin de run"));
+                .append(buildCustomLink("§e§l[📋 Rouvrir le récap]", "debrief", "Réafficher l'écran de fin de run"))
+                .append(Text.literal("  "))
+                .append(buildCustomLink("§6§l[🏆 Leaderboard]", "leaderboard", "Voir les dernières runs"));
 
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
             p.sendMessage(Text.literal(""), false);
@@ -542,7 +544,9 @@ public final class EndRunHandler {
                 .append(Text.literal(" "))
                 .append(buildCustomLink("§5[🐲]", "tp_end", "End"))
                 .append(Text.literal("   "))
-                .append(buildCustomLink("§e[📋]", "debrief", "Rouvrir le récap"));
+                .append(buildCustomLink("§e[📋]", "debrief", "Rouvrir le récap"))
+                .append(Text.literal(" "))
+                .append(buildCustomLink("§6[🏆]", "leaderboard", "Leaderboard"));
         p.sendMessage(divider, false);
         p.sendMessage(buttons, false);
     }
