@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "sharedrun",
+  "version": "${version}",
+  "name": "SharedRun",
+  "description": "Soirée mode: shared HP across players + countdown HUD timer.",
+  "authors": ["Rayan"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.sharedrun.SharedRun"],
+    "client": ["dev.sharedrun.client.SharedRunClient"]
+  },
+  "mixins": ["sharedrun.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "placeholder-api": "*"
+  }
+}

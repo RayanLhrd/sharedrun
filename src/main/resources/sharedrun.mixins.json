@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.sharedrun.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LivingEntityAccessor",
+    "CustomClickActionMixin",
+    "ConsumableComponentMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

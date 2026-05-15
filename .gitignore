@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Eclipse
+bin/
+
+# Fabric Loom run dirs
+run/
+runs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code workspace
+.claude/
+
+# Build artifacts that sneak in
+*.jar.bak

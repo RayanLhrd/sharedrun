@@ -1,0 +1,20 @@
+{
+  "death_gameover": {
+    "category": "master",
+    "sounds": [
+      {
+        "name": "sharedrun:cinematic/death_gameover",
+        "stream": false
+      }
+    ]
+  },
+  "victory_theme": {
+    "category": "master",
+    "sounds": [
+      {
+        "name": "sharedrun:cinematic/victory_theme",
+        "stream": false
+      }
+    ]
+  }
+}

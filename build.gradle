@@ -1,0 +1,69 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+    id 'java'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.nucleoid.xyz/' }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    Set<String> apiModules = [
+            "fabric-api-base",
+            "fabric-lifecycle-events-v1",
+            "fabric-entity-events-v1",
+            "fabric-networking-api-v1",
+            "fabric-rendering-v1",
+            "fabric-command-api-v2"
+    ]
+    apiModules.each { mod ->
+        modImplementation(fabricApi.module(mod, project.fabric_version))
+    }
+
+    modImplementation "eu.pb4:placeholder-api:2.8.1+1.21.10"
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 21
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+tasks.register('copyToMods', Copy) {
+    dependsOn tasks.named('remapJar')
+    from tasks.named('remapJar').get().archiveFile
+    into project.mods_dir
+}
+
+tasks.named('build').configure {
+    finalizedBy(tasks.named('copyToMods'))
+}
