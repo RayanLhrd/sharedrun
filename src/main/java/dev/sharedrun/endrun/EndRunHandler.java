@@ -3,6 +3,7 @@ package dev.sharedrun.endrun;
 import com.google.gson.Gson;
 import dev.sharedrun.SharedRun;
 import dev.sharedrun.achievement.AchievementTracker;
+import dev.sharedrun.api.ApiReporter;
 import dev.sharedrun.mixin.LivingEntityAccessor;
 import dev.sharedrun.network.RunSummaryPayload;
 import dev.sharedrun.progress.ProgressTracker;
@@ -203,6 +204,8 @@ public final class EndRunHandler {
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
             ServerPlayNetworking.send(p, payload);
         }
+        // Envoi async à l'API externe — ne bloque pas le thread serveur
+        ApiReporter.reportRunEnd(data);
     }
 
     public static boolean resendSummaryTo(ServerPlayerEntity player) {
@@ -231,7 +234,9 @@ public final class EndRunHandler {
                 .append(buildCustomLink("§5[🐲 End]", "tp_end", "TP au point d'arrivée End"));
 
         MutableText reopen = Text.literal("  ")
-                .append(buildCustomLink("§e§l[📋 Rouvrir le récap]", "debrief", "Réafficher l'écran de fin de run"));
+                .append(buildCustomLink("§e§l[📋 Rouvrir le récap]", "debrief", "Réafficher l'écran de fin de run"))
+                .append(Text.literal("  "))
+                .append(buildCustomLink("§6§l[🏆 Leaderboard]", "leaderboard", "Voir les dernières runs"));
 
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
             p.sendMessage(Text.literal(""), false);
@@ -256,21 +261,31 @@ public final class EndRunHandler {
         s.endReason = reason.ordinal();
         int elapsed = SharedRunState.totalSeconds - (SharedRunState.remainingTicks / 20);
         if (elapsed < 0) elapsed = 0;
-        s.elapsedSeconds = elapsed;
-        s.totalSeconds = SharedRunState.totalSeconds;
-        s.swapCount = SharedRunState.swapCount;
-        s.playerCount = server.getPlayerManager().getPlayerList().size();
+        s.elapsedSeconds   = elapsed;
+        s.totalSeconds     = SharedRunState.totalSeconds;
+        s.swapCount        = SharedRunState.swapCount;
+        s.playerCount      = server.getPlayerManager().getPlayerList().size();
         s.totalAchievements = AchievementTracker.getTotalCount();
+        s.solo             = s.playerCount == 1;
+        s.eventTimestamp   = System.currentTimeMillis();
+        s.seed             = String.valueOf(server.getOverworld().getSeed());
 
-        addMilestone(s, "food", "minecraft:bread", ProgressTracker.foodReached, ProgressTracker.byFood);
-        addMilestone(s, "iron", "minecraft:iron_ingot", ProgressTracker.ironReached, ProgressTracker.byIron);
-        addMilestone(s, "diamond", "minecraft:diamond", ProgressTracker.diamondReached, ProgressTracker.byDiamond);
-        addMilestone(s, "nether", "minecraft:netherrack", ProgressTracker.netherReached, ProgressTracker.byNether);
-        addMilestone(s, "blaze", "minecraft:blaze_rod", ProgressTracker.blazeReached, ProgressTracker.byBlaze);
-        addMilestone(s, "pearl", "minecraft:ender_pearl", ProgressTracker.pearlReached, ProgressTracker.byPearl);
-        addMilestone(s, "eye", "minecraft:ender_eye", ProgressTracker.eyeReached, ProgressTracker.byEye);
-        addMilestone(s, "end", "minecraft:end_portal_frame", ProgressTracker.endReached, ProgressTracker.byEnd);
-        addMilestone(s, "dragon", "minecraft:dragon_head", ProgressTracker.dragonKilled, ProgressTracker.byDragon);
+        float hpLeft = Math.max(0f, Math.min(SharedRunState.DEFAULT_MAX_HEALTH, SharedRunState.sharedHealth));
+        s.hpLost = SharedRunState.DEFAULT_MAX_HEALTH - hpLeft;
+
+        if (reason == EndReason.ALL_DEAD) {
+            s.deathTimeSec = elapsed;
+        }
+
+        addMilestone(s, "food",    "minecraft:bread",            ProgressTracker.foodReached,    ProgressTracker.byFood,    ProgressTracker.foodTimestampSec);
+        addMilestone(s, "iron",    "minecraft:iron_ingot",       ProgressTracker.ironReached,    ProgressTracker.byIron,    ProgressTracker.ironTimestampSec);
+        addMilestone(s, "diamond", "minecraft:diamond",          ProgressTracker.diamondReached, ProgressTracker.byDiamond, ProgressTracker.diamondTimestampSec);
+        addMilestone(s, "nether",  "minecraft:netherrack",       ProgressTracker.netherReached,  ProgressTracker.byNether,  ProgressTracker.netherTimestampSec);
+        addMilestone(s, "blaze",   "minecraft:blaze_rod",        ProgressTracker.blazeReached,   ProgressTracker.byBlaze,   ProgressTracker.blazeTimestampSec);
+        addMilestone(s, "pearl",   "minecraft:ender_pearl",      ProgressTracker.pearlReached,   ProgressTracker.byPearl,   ProgressTracker.pearlTimestampSec);
+        addMilestone(s, "eye",     "minecraft:ender_eye",        ProgressTracker.eyeReached,     ProgressTracker.byEye,     ProgressTracker.eyeTimestampSec);
+        addMilestone(s, "end",     "minecraft:end_portal_frame", ProgressTracker.endReached,     ProgressTracker.byEnd,     ProgressTracker.endTimestampSec);
+        addMilestone(s, "dragon",  "minecraft:dragon_head",      ProgressTracker.dragonKilled,   ProgressTracker.byDragon,  ProgressTracker.dragonTimestampSec);
 
         for (var entry : AchievementTracker.getAchievedBy().entrySet()) {
             RunSummary.Achievement a = new RunSummary.Achievement();
@@ -529,7 +544,9 @@ public final class EndRunHandler {
                 .append(Text.literal(" "))
                 .append(buildCustomLink("§5[🐲]", "tp_end", "End"))
                 .append(Text.literal("   "))
-                .append(buildCustomLink("§e[📋]", "debrief", "Rouvrir le récap"));
+                .append(buildCustomLink("§e[📋]", "debrief", "Rouvrir le récap"))
+                .append(Text.literal(" "))
+                .append(buildCustomLink("§6[🏆]", "leaderboard", "Leaderboard"));
         p.sendMessage(divider, false);
         p.sendMessage(buttons, false);
     }
@@ -628,12 +645,13 @@ public final class EndRunHandler {
         }
     }
 
-    private static void addMilestone(RunSummary s, String key, String iconItem, boolean reached, String by) {
+    private static void addMilestone(RunSummary s, String key, String iconItem, boolean reached, String by, int timestampSec) {
         RunSummary.Milestone m = new RunSummary.Milestone();
-        m.key = key;
-        m.iconItem = iconItem;
-        m.reached = reached;
-        m.by = by;
+        m.key          = key;
+        m.iconItem     = iconItem;
+        m.reached      = reached;
+        m.by           = by;
+        m.timestampSec = timestampSec;
         s.milestones.add(m);
     }
 

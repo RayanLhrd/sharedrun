@@ -50,6 +50,17 @@ public final class ProgressTracker {
     public static volatile String byEnd = null;
     public static volatile String byDragon = null;
 
+    // Secondes écoulées depuis le début de la run au moment où chaque milestone a été atteint (-1 = pas encore)
+    public static volatile int foodTimestampSec    = -1;
+    public static volatile int ironTimestampSec    = -1;
+    public static volatile int diamondTimestampSec = -1;
+    public static volatile int netherTimestampSec  = -1;
+    public static volatile int blazeTimestampSec   = -1;
+    public static volatile int pearlTimestampSec   = -1;
+    public static volatile int eyeTimestampSec     = -1;
+    public static volatile int endTimestampSec     = -1;
+    public static volatile int dragonTimestampSec  = -1;
+
     private static boolean prevFood = false;
     private static boolean prevIron = false;
     private static boolean prevDiamond = false;
@@ -93,6 +104,7 @@ public final class ProgressTracker {
                         if (state.isOf(Blocks.END_PORTAL_FRAME) && state.get(EndPortalFrameBlock.EYE)) {
                             endReached = true;
                             byEnd = p.getName().getString();
+                            endTimestampSec = elapsedSeconds();
                             return; // sort dès qu'un seul œil est trouvé
                         }
                     }
@@ -153,12 +165,12 @@ public final class ProgressTracker {
             eyes += pEye;
         }
 
-        if (firstFood != null && !foodReached)       { foodReached = true; byFood = firstFood; }
-        if (firstIron != null && !ironReached)       { ironReached = true; byIron = firstIron; }
-        if (firstDiamond != null && !diamondReached) { diamondReached = true; byDiamond = firstDiamond; }
-        if (firstBlaze != null && !blazeReached)     { blazeReached = true; byBlaze = firstBlaze; }
-        if (firstPearl != null && !pearlReached)     { pearlReached = true; byPearl = firstPearl; }
-        if (firstEye != null && !eyeReached)         { eyeReached = true; byEye = firstEye; }
+        if (firstFood != null && !foodReached)       { foodReached = true; byFood = firstFood;         foodTimestampSec    = elapsedSeconds(); }
+        if (firstIron != null && !ironReached)       { ironReached = true; byIron = firstIron;         ironTimestampSec    = elapsedSeconds(); }
+        if (firstDiamond != null && !diamondReached) { diamondReached = true; byDiamond = firstDiamond; diamondTimestampSec = elapsedSeconds(); }
+        if (firstBlaze != null && !blazeReached)     { blazeReached = true; byBlaze = firstBlaze;       blazeTimestampSec   = elapsedSeconds(); }
+        if (firstPearl != null && !pearlReached)     { pearlReached = true; byPearl = firstPearl;       pearlTimestampSec   = elapsedSeconds(); }
+        if (firstEye != null && !eyeReached)         { eyeReached = true; byEye = firstEye;             eyeTimestampSec     = elapsedSeconds(); }
 
         foodCount = food;
         ironIngotCount = iron;
@@ -235,6 +247,7 @@ public final class ProgressTracker {
             if (!netherReached) {
                 netherReached = true;
                 byNether = name;
+                netherTimestampSec = elapsedSeconds();
                 SharedRunState.netherEntryPos = player.getBlockPos().asLong();
             }
         } else if (destination.getRegistryKey() == World.END) {
@@ -249,9 +262,14 @@ public final class ProgressTracker {
 
     public static void onDragonKilled(ServerPlayerEntity killer) {
         dragonKilled = true;
+        dragonTimestampSec = elapsedSeconds();
         if (killer != null && byDragon == null) {
             byDragon = killer.getName().getString();
         }
+    }
+
+    private static int elapsedSeconds() {
+        return SharedRunState.totalSeconds - SharedRunState.remainingTicks / 20;
     }
 
     public static void reset() {
@@ -281,6 +299,16 @@ public final class ProgressTracker {
         byEye = null;
         byEnd = null;
         byDragon = null;
+
+        foodTimestampSec    = -1;
+        ironTimestampSec    = -1;
+        diamondTimestampSec = -1;
+        netherTimestampSec  = -1;
+        blazeTimestampSec   = -1;
+        pearlTimestampSec   = -1;
+        eyeTimestampSec     = -1;
+        endTimestampSec     = -1;
+        dragonTimestampSec  = -1;
 
         prevFood = false;
         prevIron = false;
@@ -345,6 +373,16 @@ public final class ProgressTracker {
         if (byEye != null)     nbt.putString("progressByEye", byEye);
         if (byEnd != null)     nbt.putString("progressByEnd", byEnd);
         if (byDragon != null)  nbt.putString("progressByDragon", byDragon);
+
+        nbt.putInt("tsFood",    foodTimestampSec);
+        nbt.putInt("tsIron",    ironTimestampSec);
+        nbt.putInt("tsDiamond", diamondTimestampSec);
+        nbt.putInt("tsNether",  netherTimestampSec);
+        nbt.putInt("tsBlaze",   blazeTimestampSec);
+        nbt.putInt("tsPearl",   pearlTimestampSec);
+        nbt.putInt("tsEye",     eyeTimestampSec);
+        nbt.putInt("tsEnd",     endTimestampSec);
+        nbt.putInt("tsDragon",  dragonTimestampSec);
     }
 
     public static void readNbt(NbtCompound nbt) {
@@ -375,6 +413,16 @@ public final class ProgressTracker {
         byEye     = nbt.getString("progressByEye").orElse(null);
         byEnd     = nbt.getString("progressByEnd").orElse(null);
         byDragon  = nbt.getString("progressByDragon").orElse(null);
+
+        foodTimestampSec    = nbt.getInt("tsFood").orElse(-1);
+        ironTimestampSec    = nbt.getInt("tsIron").orElse(-1);
+        diamondTimestampSec = nbt.getInt("tsDiamond").orElse(-1);
+        netherTimestampSec  = nbt.getInt("tsNether").orElse(-1);
+        blazeTimestampSec   = nbt.getInt("tsBlaze").orElse(-1);
+        pearlTimestampSec   = nbt.getInt("tsPearl").orElse(-1);
+        eyeTimestampSec     = nbt.getInt("tsEye").orElse(-1);
+        endTimestampSec     = nbt.getInt("tsEnd").orElse(-1);
+        dragonTimestampSec  = nbt.getInt("tsDragon").orElse(-1);
 
         prevFood = foodReached;
         prevIron = ironReached;

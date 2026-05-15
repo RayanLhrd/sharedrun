@@ -1,5 +1,6 @@
 package dev.sharedrun.mixin;
 
+import dev.sharedrun.api.LeaderboardFetcher;
 import dev.sharedrun.endrun.EndRunHandler;
 import net.minecraft.network.packet.c2s.common.CustomClickActionC2SPacket;
 import net.minecraft.server.MinecraftServer;
@@ -46,6 +47,10 @@ public abstract class CustomClickActionMixin {
             case "tp_fortress"  -> dest = 5;
             case "debrief"      -> {
                 server.execute(() -> EndRunHandler.resendSummaryTo(player));
+                return;
+            }
+            case "leaderboard"  -> {
+                server.execute(() -> LeaderboardFetcher.fetchAndSend(player));
                 return;
             }
             default -> { return; }
